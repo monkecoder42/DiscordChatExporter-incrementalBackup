@@ -175,7 +175,7 @@ class CommandRunner:
             print(f"  {self.redact_dce_command(command)}")
 
             if not DRY_RUN:
-                with open(f"exports/{guild["guildName"]}/{nowTimestampFolder}/channels.txt", "wb") as f:
+                with open(f'exports/{guild["guildName"]}/{nowTimestampFolder}/channels.txt', "wb") as f:
                     proc = subprocess.run(channels_command, shell=True, stdout=f)
                 print(f"  saved channels file, return code {proc.returncode}")
                 
