@@ -144,10 +144,12 @@ class CommandRunner:
                 dce_path = '"dce/DiscordChatExporter.Cli"'
                 common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false'
                 custom_args = f'--token "{guild["tokenValue"]}" --media-dir "exports/{guild["guildName"]}/_media/" --output "exports/{guild["guildName"]}/{nowTimestampFolder}/%c.json"'
+                channels_custom_args = f'--token "{guild["tokenValue"]}"'
             elif is_linux() and shutil.which('docker') is not None:
                 dce_path = f'docker run --rm -it -v "$(pwd)/exports/{guild["guildName"]}/_media:/out/{guild["guildName"]}/_media" -v "$(pwd)/exports/{guild["guildName"]}/{nowTimestampFolder}:/out/{guild["guildName"]}/{nowTimestampFolder}" tyrrrz/discordchatexporter:stable'
                 common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false'
                 custom_args = f'--token "{guild["tokenValue"]}" --media-dir "{guild["guildName"]}/_media/" --output "{guild["guildName"]}/{nowTimestampFolder}/%c.json"'
+                channels_custom_args = f'--token "{guild["tokenValue"]}"'
             else:
                 print("#########################################################################################")
                 print('# DiscordChatExporter dependency not found!                                             #')
@@ -159,8 +161,10 @@ class CommandRunner:
 
             if guild['type'] == 'exportguild':
                 command = f"{dce_path} exportguild --guild {guild['guildId']} --include-threads All {common_args} {custom_args}"
+                channels_command = f"{dce_path} channels --guild {guild['guildId']} --include-threads All {channels_custom_args}"
             elif guild['type'] == 'exportdm':
                 command = f"{dce_path} exportdm {common_args} {custom_args}"
+                channels_command = f"{dce_path} dm {channels_custom_args}"
             else:
                 print(f'  Unknown export type {guild["type"]}')
                 exit(1)
@@ -171,6 +175,10 @@ class CommandRunner:
             print(f"  {self.redact_dce_command(command)}")
 
             if not DRY_RUN:
+                with open(f"exports/{guild["guildName"]}/{nowTimestampFolder}/channels.txt", "wb") as f:
+                    proc = subprocess.run(channels_command, shell=True, stdout=f)
+                print(f"  saved channels file, return code {proc.returncode}")
+                
                 proc = subprocess.run(command, shell=True)
 
                 return_code = proc.returncode
