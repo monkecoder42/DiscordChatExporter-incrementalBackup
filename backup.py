@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import subprocess
+import pathlib
 
 # dry run option for development
 DRY_RUN = False
@@ -175,6 +176,7 @@ class CommandRunner:
             print(f"  {self.redact_dce_command(command)}")
 
             if not DRY_RUN:
+                pathlib.Path(f'exports/{guild["guildName"]}/{nowTimestampFolder}/').mkdir(parents=True, exist_ok=True) 
                 with open(f'exports/{guild["guildName"]}/{nowTimestampFolder}/channels.txt', "wb") as f:
                     proc = subprocess.run(channels_command, shell=True, stdout=f)
                 print(f"  saved channels file, return code {proc.returncode}")
