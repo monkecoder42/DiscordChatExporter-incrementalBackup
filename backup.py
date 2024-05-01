@@ -146,19 +146,19 @@ class CommandRunner:
             if os.path.exists(f'dce/DiscordChatExporter.Cli.exe'):
                 dce_path = '"dce/DiscordChatExporter.Cli"'
                 if EXPORT_MEDIA:
-                    common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false'
+                    common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false -p 100mb'
                     custom_args = f'--token "{guild["tokenValue"]}" --media-dir "exports/{guild["guildName"]}/_media/" --output "exports/{guild["guildName"]}/{nowTimestampFolder}/%c.json"'
                 else:
-                    common_args = f'--format Json --fuck-russia --markdown false'
+                    common_args = f'--format Json --fuck-russia --markdown false -p 100mb'
                     custom_args = f'--token "{guild["tokenValue"]}" --output "exports/{guild["guildName"]}/{nowTimestampFolder}/%c.json"'
                 channels_custom_args = f'--token "{guild["tokenValue"]}"'
             elif is_linux() and shutil.which('docker') is not None:
                 dce_path = f'docker run --rm -it -v "$(pwd)/exports/{guild["guildName"]}/_media:/out/{guild["guildName"]}/_media" -v "$(pwd)/exports/{guild["guildName"]}/{nowTimestampFolder}:/out/{guild["guildName"]}/{nowTimestampFolder}" tyrrrz/discordchatexporter:stable'
                 if EXPORT_MEDIA:
-                    common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false'
+                    common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false -p 100mb'
                     custom_args = f'--token "{guild["tokenValue"]}" --media-dir "{guild["guildName"]}/_media/" --output "{guild["guildName"]}/{nowTimestampFolder}/%c.json"'
                 else:
-                    common_args = f'--format Json --fuck-russia --markdown false'
+                    common_args = f'--format Json --fuck-russia --markdown false -p 100mb'
                     custom_args = f'--token "{guild["tokenValue"]}" --output "{guild["guildName"]}/{nowTimestampFolder}/%c.json"'
                 channels_custom_args = f'--token "{guild["tokenValue"]}"'
             else:
