@@ -37,7 +37,9 @@ class Config:
                 continue
             self.validate_guild(guild)
             guild['tokenValue'] = self._tokens[guild['tokenName']]
-            if guild['guildId'] == '@me':
+            if 'channelIds' in guild:
+                guild['type'] = 'exportchannels'
+            elif guild['guildId'] == '@me':
                 guild['type'] = 'exportdm'
             else:
                 guild['type'] = 'exportguild'
@@ -57,7 +59,8 @@ class Config:
         """
         invalid_path_chars = re.compile(r'[<>:"/\\|?*]')
         discord_snowflake = re.compile(r'^\d{17,19}$')  # 19 digits won't be enough in 2090. But you probably won't be using this script then
-        required_fields = ['tokenName', 'guildId', 'guildName']
+        is_channel_export = 'channelIds' in guild
+        required_fields = ['tokenName', 'channelIds', 'guildName'] if is_channel_export else ['tokenName', 'guildId', 'guildName']
 
         for required_field in required_fields:
             if required_field not in guild:
@@ -70,8 +73,12 @@ class Config:
                 print(f'Guild must have "{required_field}" field defined - found empty value')
                 exit(1)
 
-        if guild['guildId'] != '@me' and not discord_snowflake.match(guild['guildId']):
+        if not is_channel_export and guild['guildId'] != '@me' and not discord_snowflake.match(guild['guildId']):
             print(f'Guild field "guildId" must be a discord snowflake (must be a string of 17-19 digits or "@me" for DMs) - found {guild["guildId"]}')
+            exit(1)
+
+        if is_channel_export and not all(discord_snowflake.match(id) for id in guild['channelIds'].split()):
+            print(f'Guild field "channelIds" must be a space-separated list of discord snowflakes - found {guild["channelIds"]}')
             exit(1)
 
         if invalid_path_chars.search(guild['guildName']):
@@ -129,11 +136,15 @@ class CommandRunner:
 
     def export(self) -> None:
         for guild in self.config.guilds:
-            print(f'Guild {guild["guildName"]} ({guild["guildId"]}):')
+            if guild['type'] == 'exportchannels':
+                id = guild['channelIds']
+            else:
+                id = guild['guildId']
+            print(f'Guild {guild["guildName"]} ({id}):')
             # export may take a long time. We want to know when the export started, so the next export won't miss any new messages created during the export
             nowTimestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")                   # example 2023-08-26T02:46:30.229228Z
             nowTimestampFolder = re.sub(r'\.\d+Z', '', nowTimestamp.replace(':', '-').replace('T', '--'))  # example 2023-08-26--02-46-30
-            last_export_timestamp = self.timestamps.get_timestamp(guild['guildId'])
+            last_export_timestamp = self.timestamps.get_timestamp(id)
 
             # skip export if export was done recently (based on throttleHours from config)
             if last_export_timestamp is not None:
@@ -169,8 +180,10 @@ class CommandRunner:
                 print("#########################################################################################")
                 exit(1)
 
-
-            if guild['type'] == 'exportguild':
+            if guild['type'] == 'exportchannels':
+                command = f"{dce_path} export -c {guild['channelIds']} --include-threads All {common_args} {custom_args}"
+                channels_command = f"{dce_path} channels --guild {guild['guildId']} --include-threads All {channels_custom_args}" if ('guildId' in guild) else None
+            elif guild['type'] == 'exportguild':
                 command = f"{dce_path} exportguild --guild {guild['guildId']} --include-threads All {common_args} {custom_args}"
                 channels_command = f"{dce_path} channels --guild {guild['guildId']} --include-threads All {channels_custom_args}"
             elif guild['type'] == 'exportdm':
@@ -186,10 +199,11 @@ class CommandRunner:
             print(f"  {self.redact_dce_command(command)}")
 
             if not DRY_RUN:
-                pathlib.Path(f'exports/{guild["guildName"]}/{nowTimestampFolder}/').mkdir(parents=True, exist_ok=True) 
-                with open(f'exports/{guild["guildName"]}/{nowTimestampFolder}/channels.txt', "wb") as f:
-                    proc = subprocess.run(channels_command, shell=True, stdout=f)
-                print(f"  saved channels file, return code {proc.returncode}")
+                pathlib.Path(f'exports/{guild["guildName"]}/{nowTimestampFolder}/').mkdir(parents=True, exist_ok=True)
+                if channels_command is not None:
+                    with open(f'exports/{guild["guildName"]}/{nowTimestampFolder}/channels.txt', "wb") as f:
+                        proc = subprocess.run(channels_command, shell=True, stdout=f)
+                    print(f"  saved channels file, return code {proc.returncode}")
                 
                 proc = subprocess.run(command, shell=True)
 
