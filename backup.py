@@ -211,7 +211,11 @@ class CommandRunner:
                 print(f"  return code {return_code}")
 
                 if return_code == 0:
-                    self.timestamps.set_timestamp(guild['guildId'], nowTimestamp)
+                    if 'channelIds' in guild:
+                        save_id = "channel-" + guild['channelIds']
+                    else:
+                        save_id = guild['guildId']
+                    self.timestamps.set_timestamp(save_id, nowTimestamp)
                 else:
                     print(f'  Error exporting {guild["guildName"]}. Does dce/DiscordChatExporter.Cli exist? Maybe there are no new messages? Check the logs above for more information.')
 
