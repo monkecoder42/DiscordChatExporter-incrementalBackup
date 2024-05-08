@@ -181,7 +181,7 @@ class CommandRunner:
                 exit(1)
 
             if guild['type'] == 'exportchannels':
-                command = f"{dce_path} export -c {guild['channelIds']} --include-threads All {common_args} {custom_args}"
+                command = f"{dce_path} export -c {guild['channelIds']} {common_args} {custom_args}"
                 channels_command = f"{dce_path} channels --guild {guild['guildId']} --include-threads All {channels_custom_args}" if ('guildId' in guild) else None
             elif guild['type'] == 'exportguild':
                 command = f"{dce_path} exportguild --guild {guild['guildId']} --include-threads All {common_args} {custom_args}"
