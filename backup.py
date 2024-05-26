@@ -9,8 +9,6 @@ import pathlib
 # dry run option for development
 DRY_RUN = False
 
-EXPORT_MEDIA = False
-
 def is_linux():
     return os.name == 'posix' and 'linux' in os.uname().sysname.lower()
 
@@ -89,6 +87,10 @@ class Config:
             print(f'Optional guild field "enabled" must be a boolean if set - found {type(guild["enabled"])}')
             exit(1)
 
+        if "exportMedia" in guild and type(guild["exportMedia"]) != bool:
+            print(f'Optional guild field "exportMedia" must be a boolean if set - found {type(guild["exportMedia"])}')
+            exit(1)
+
         if guild['tokenName'] not in self._tokens:
             print(self._tokens)
             print(f'Token "{guild["tokenName"]}" not found in tokens. Available tokens: {", ".join(self._tokens.keys())}')
@@ -158,9 +160,14 @@ class CommandRunner:
                     print(f'  Skipping export because throttleHours is set to {guild["throttleHours"]} hours')
                     continue
 
+            if 'exportMedia' in guild and guild['exportMedia']:
+                export_media = True
+            else:
+                export_media = False
+
             if os.path.exists(f'dce/DiscordChatExporter.Cli.exe'):
                 dce_path = '"dce/DiscordChatExporter.Cli"'
-                if EXPORT_MEDIA:
+                if export_media:
                     common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false -p 100mb'
                     custom_args = f'--token "{guild["tokenValue"]}" --media-dir "exports/{guild["guildName"]}/_media/" --output "exports/{guild["guildName"]}/{nowTimestampFolder}/%c.json"'
                 else:
@@ -169,7 +176,7 @@ class CommandRunner:
                 channels_custom_args = f'--token "{guild["tokenValue"]}"'
             elif is_linux() and shutil.which('docker') is not None:
                 dce_path = f'docker run --rm -it -v "$(pwd)/exports/{guild["guildName"]}/_media:/out/{guild["guildName"]}/_media" -v "$(pwd)/exports/{guild["guildName"]}/{nowTimestampFolder}:/out/{guild["guildName"]}/{nowTimestampFolder}" tyrrrz/discordchatexporter:stable'
-                if EXPORT_MEDIA:
+                if export_media:
                     common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false -p 100mb'
                     custom_args = f'--token "{guild["tokenValue"]}" --media-dir "{guild["guildName"]}/_media/" --output "{guild["guildName"]}/{nowTimestampFolder}/%c.json"'
                 else:
