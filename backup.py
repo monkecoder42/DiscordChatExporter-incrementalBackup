@@ -147,8 +147,11 @@ class CommandRunner:
             else:
                 save_id = guild['guildId']
             print(f'Guild {guild["guildName"]} ({id}):')
-            # export may take a long time. We want to know when the export started, so the next export won't miss any new messages created during the export
-            nowTimestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")                   # example 2023-08-26T02:46:30.229228Z
+            if 'beforeDate' in guild:
+                nowTimestamp = guild["beforeDate"]
+            else:
+                # export may take a long time. We want to know when the export started, so the next export won't miss any new messages created during the export
+                nowTimestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")                   # example 2023-08-26T02:46:30.229228Z
             nowTimestampFolder = re.sub(r'\.\d+Z', '', nowTimestamp.replace(':', '-').replace('T', '--'))  # example 2023-08-26--02-46-30
             last_export_timestamp = self.timestamps.get_timestamp(save_id)
 
@@ -206,6 +209,8 @@ class CommandRunner:
 
             if last_export_timestamp is not None:
                 command = f'{command} --after "{last_export_timestamp}"'
+            if 'beforeDate' in guild:
+                command = f'{command} --before "{nowTimestamp}"'
 
             print(f"  {self.redact_dce_command(command)}")
 
